@@ -1,6 +1,21 @@
-import { createRoot } from 'react-dom/client'
+import {createRoot} from 'react-dom/client'
 import './index.css'
+import Header from './Header'
+import Main from './MainElement'
 
-createRoot(document.getElementById('root')!).render(
-	<>hello, this is working</>
-)
+
+
+const rootElement = document.getElementById('root')!
+const root = createRoot(rootElement)
+
+
+export default function render() {
+	root.render(
+		<>
+		<Header />
+		<Main />
+		</>
+	)
+}
+
+render()
