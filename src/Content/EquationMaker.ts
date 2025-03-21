@@ -1,26 +1,29 @@
-// "(55 / 4)x + 5"
+class Fraction {
+	numeritor: number;
+	denominator: number;
 
-// let slope = 1
+	constructor(numeritor: number, denominator: number) {
+		this.numeritor = numeritor;
+		this.denominator = denominator;
+	}
 
-//TODO: work on this later on
-//function detectParenthesis(content: string){
-//	const parenthesisRegexString = "\\([0-9 \\+-\\/]+?\\)";
-//	//todo if it ends with parenthesis you should definitely include the last item becuse this excludes the last item
-//	const parenthesisRegex = new RegExp(`${parenthesisRegexString}[^x]`, 'g');
-//	const slopeRegex = new RegExp(`${parenthesisRegexString}x`, 'g');
-//	console.log([...content.matchAll(parenthesisRegex)]);
-//	console.log(content.match(slopeRegex));
-//}
+	getString(): string{
 
-// detectParenthesis(content)
+		return `${this.numeritor} / ${this.denominator}`
+	}
+	// TODO: simplifyFraction and make another output if simplifyCationIsPossible
+	// simplify()
+
+}
+
 let currentStageIndex: number = 0;
 const stages: string[] = ['divideOrMultiplyTarget']
-const returns: any[]= []
+const returns: any[] = []
 
 export default function EquationMaker(content: string): any[] {
 	let currentStage: string = stages[currentStageIndex]
 	if (currentStage == 'divideOrMultiplyTarget') {
-		returns.push([currentStage,  divideOrMultiplyTargetStage(content)])
+		returns.push([currentStage, divideOrMultiplyTargetStage(content)])
 
 
 	}
@@ -51,22 +54,26 @@ function divideOrMultiplyTargetStage(content: string): string {
 			yIsDivisible = false
 		}
 	}
-	return yIsDivisible ? `y = ${divideY(yValue, numbers)}` : `y = ${unifyInFractionForm()}`;
+	return yIsDivisible ? `y = ${divideY(yValue, numbers)}` : `y = ${unifyInFractionForm(yValue, numbers)}`;
 
 
 }
 
 function divideY(yValue: number, numbers: number[]): string {
-	if (numbers.length == 1) {
-		return `${yValue / numbers[0]}`
-	}
-	else {
-		return numbers.map((e: number) => e / yValue).join(" = ")
-	}
-
+	return checkIfOneEquality(numbers, `${yValue / numbers[0]}`, (e: number) => e / yValue)
 }
 
+function checkIfOneEquality(numbers: number[],simpleOp: string, callableFunc: (e: number) => number | string ): string{
+	if (numbers.length == 1) {
+		return simpleOp
+	}
+	else {
+		return numbers.map(callableFunc).join(" = ")
+	}
+}
 
-function unifyInFractionForm(): string {
-	return "y not  is divisible"
+function unifyInFractionForm(yValue: number, numbers: number[]): string {
+	return checkIfOneEquality(numbers, new Fraction(yValue, numbers[0]).getString(),
+				(e: number) => {
+					return new Fraction(e, yValue).getString()})
 }
