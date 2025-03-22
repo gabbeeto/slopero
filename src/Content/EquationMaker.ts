@@ -1,34 +1,119 @@
 class Fraction {
 	numeritor: number;
 	denominator: number;
+	HighestNumber: number;
+	isFractionSimplified: boolean;
 
 	constructor(numeritor: number, denominator: number) {
 		this.numeritor = numeritor;
 		this.denominator = denominator;
+		this.HighestNumber = this.numeritor > this.denominator ? this.numeritor : this.denominator;
+		this.isFractionSimplified = false
 	}
 
-	getString(): string{
+	getString(): string {
 
 		return `${this.numeritor} / ${this.denominator}`
 	}
-	// TODO: simplifyFraction and make another output if simplifyCationIsPossible
-	// simplify()
+
+	checkIfCanBeSimplefied() {
+		let pNumeritor = this.numeritor;
+		let pDenominator = this.denominator;
+		let pHighestNumber = this.HighestNumber;
+
+		this.simplify(0)
+
+		let NumeratorOrDenominatorHasChanged: boolean = pNumeritor != this.numeritor || pDenominator != this.denominator
+		if (NumeratorOrDenominatorHasChanged) {
+			this.isFractionSimplified = true
+		}
+
+		// reset values to previous values
+		this.numeritor = pNumeritor;
+		this.denominator = pDenominator;
+		this.HighestNumber = pHighestNumber;
+	}
+
+	simplify(changingNumber: number = 2) {
+		if (changingNumber == this.HighestNumber) {
+			return null;
+		}
+		else {
+			let numeritorIsDivisibleByChangingNumber: boolean = this.numeritor % changingNumber == 0
+			let denominatorIsDivisibleByChangingNumber: boolean = this.denominator % changingNumber == 0
+			if (numeritorIsDivisibleByChangingNumber && denominatorIsDivisibleByChangingNumber) {
+				this.numeritor /= changingNumber
+				this.denominator /= changingNumber
+				this.HighestNumber = this.numeritor > this.denominator ? this.numeritor : this.denominator;
+				// this resets divisible number so it can check again if the same divisible number is repeated
+				this.simplify(2)
+			}
+			else {
+
+				this.simplify(changingNumber + 1)
+			}
+
+		}
+
+	}
 
 }
 
+
+let simplifiableStages: string[] = [];
 let currentStageIndex: number = 0;
 const stages: string[] = ['divideOrMultiplyTarget']
-const returns: any[] = []
+let returns: any[] = []
+
+function reset(){
+	simplifiableStages= [];
+	currentStageIndex= 0;
+	returns = []
+}
 
 export default function EquationMaker(content: string): any[] {
+
+	reset()
+
 	let currentStage: string = stages[currentStageIndex]
 	if (currentStage == 'divideOrMultiplyTarget') {
-		returns.push([currentStage, divideOrMultiplyTargetStage(content)])
+		let stageAndContent = [currentStage, divideOrMultiplyTargetStage(content)]
 
+		let FractionCanBeSimplified: boolean = simplifiableStages.includes(currentStage)
+		returns.push(stageAndContent)
+		console.log(FractionCanBeSimplified)
+		if (FractionCanBeSimplified) {
+			let stageAndContentForSimplified = [`${currentStage}Simplified`, simplifyFraction(stageAndContent[1])]
+			returns.push(stageAndContentForSimplified)
+		}
 
 	}
 	return returns
 }
+
+function simplifyFraction(content: string): string {
+	let stringNumbers: string[] = content.split("=");
+	let numbers = stringNumbers.map(cFraction => {
+		let fractions = cFraction.split('/')
+		if (fractions.length > 1) {
+			let firstNumber: number = Number(fractions[0].match(/[0-9]+/)![0])
+			let secondNumber: number = Number(fractions[1].match(/[0-9]+/)![0])
+
+			return new Fraction(firstNumber, secondNumber)
+		}
+		else {
+			return 'y'
+		}
+	}).filter(element => element != 'y')
+
+	for (let number of numbers) {
+		number.simplify()
+	}
+	let numbersButString: string[] = numbers.map(e => `(${e.getString()})`)
+
+	return `y = ${numbersButString.join(' = ')}`
+}
+
 
 function divideOrMultiplyTargetStage(content: string): string {
 	let stringNumbers: string[] = content.split("=");
@@ -54,7 +139,21 @@ function divideOrMultiplyTargetStage(content: string): string {
 			yIsDivisible = false
 		}
 	}
-	return yIsDivisible ? `y = ${divideY(yValue, numbers)}` : `y = ${unifyInFractionForm(yValue, numbers)}`;
+
+	if (yIsDivisible) {
+
+		return `y = ${divideY(yValue, numbers)}`
+	}
+	else {
+		let unifiedFractionAndSimplifibility: any[] = unifyInFractionForm(yValue, numbers);
+
+		if (unifiedFractionAndSimplifibility[1]) {
+			simplifiableStages.push(stages[currentStageIndex])
+		}
+
+		return `y = ${unifiedFractionAndSimplifibility[0]}`
+
+	}
 
 
 }
@@ -63,17 +162,25 @@ function divideY(yValue: number, numbers: number[]): string {
 	return checkIfOneEquality(numbers, `${yValue / numbers[0]}`, (e: number) => e / yValue)
 }
 
-function checkIfOneEquality(numbers: number[],simpleOp: string, callableFunc: (e: number) => number | string ): string{
+function checkIfOneEquality(numbers: number[], simpleOp: string, callableFunc: (e: number) => number | string) {
 	if (numbers.length == 1) {
 		return simpleOp
 	}
 	else {
 		return numbers.map(callableFunc).join(" = ")
 	}
+
 }
 
-function unifyInFractionForm(yValue: number, numbers: number[]): string {
-	return checkIfOneEquality(numbers, new Fraction(yValue, numbers[0]).getString(),
-				(e: number) => {
-					return new Fraction(e, yValue).getString()})
+function unifyInFractionForm(yValue: number, numbers: number[]): any[] {
+	var simplefiableFraction = false
+	return [checkIfOneEquality(numbers, new Fraction(yValue, numbers[0]).getString(),
+		(e: number) => {
+			{
+				let cFraction: Fraction = new Fraction(e, yValue)
+				cFraction.checkIfCanBeSimplefied()
+				simplefiableFraction = cFraction.isFractionSimplified
+				return `( ${cFraction.getString()} )`
+			}
+		}), simplifiableStages]
 }
